@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Generate Key - MooVerify{% endblock %}
+
+{% block extra_css %}
+<style>
+    .container {
+        max-width: 600px;
+    }
+    
+    .token-display {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 15px;
+        border-radius: 10px;
+        margin: 20px 0;
+        text-align: center;
+        border: 1px solid rgba(0, 255, 136, 0.3);
+    }
+
+    .token {
+        font-family: 'Courier New', monospace;
+        font-size: 18px;
+        font-weight: bold;
+        color: #00ff88;
+        letter-spacing: 2px;
+        word-break: break-all;
+    }
+
+    .timer {
+        text-align: center;
+        font-size: 24px;
+        margin: 20px 0;
+        color: #00ccff;
+        font-weight: bold;
+    }
+
+    .key-result {
+        margin-top: 20px;
+        padding: 15px;
+        background: rgba(0, 255, 136, 0.1);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 8px;
+        text-align: center;
+        display: none;
+    }
+
+    .generated-key {
+        font-family: 'Courier New', monospace;
+        font-size: 20px;
+        font-weight: bold;
+        color: #00ff88;
+        margin: 10px 0;
+        word-break: break-all;
+    }
+
+    .copy-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #fff;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 10px 0;
+    }
+
+    .copy-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .status {
+        text-align: center;
+        margin: 10px 0;
+        font-size: 14px;
+    }
+
+    .instructions {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .success {
+        color: #00ff88;
+    }
+
+    .error {
+        color: #ff4444;
+    }
+
+    .warning {
+        color: #ffcc00;
+    }
+
+    @media (max-width: 480px) {
+        .token {
+            font-size: 16px;
+        }
+        
+        .generated-key {
+            font-size: 16px;
+        }
+        
+        .timer {
+            font-size: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="header" style="text-align: center; margin-bottom: 30px;">
+            <h1 style="font-size: 28px; margin-bottom: 10px; background: linear-gradient(45deg, #00ff88, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <i class="fas fa-shield-alt"></i> MooVerify Key System
+            </h1>
+            <p>Secure Verification & Key Generation</p>
+        </div>
+
+        <div class="instructions">
+            <p><strong><i class="fas fa-info-circle"></i> Instructions:</strong></p>
+            <p>1. Your verification token is automatically loaded</p>
+            <p>2. Click verify and wait 30 seconds</p>
+            <p>3. Receive your unique MOO activation key</p>
+        </div>
+
+        <div class="token-display">
+            <div>YOUR VERIFICATION TOKEN:</div>
+            <div class="token" id="currentToken">{{ token }}</div>
+        </div>
+
+        <div class="form-group">
+            <div class="status" id="tokenStatus">Ready for verification</div>
+        </div>
+
+        <div class="timer" id="timerDisplay" style="display: none;">
+            <i class="fas fa-clock"></i> Waiting: <span id="countdown">30</span>s
+        </div>
+
+        <button class="btn" id="generateBtn" onclick="startVerification()" style="width: 100%;">
+            <i class="fas fa-shield-alt"></i> VERIFY & GENERATE KEY
+        </button>
+
+        <div class="key-result" id="keyResult">
+            <div><i class="fas fa-check-circle"></i> VERIFICATION SUCCESSFUL</div>
+            <div>Your Unique MOO Key:</div>
+            <div class="generated-key" id="generatedKey">MOO-XXXX-XXXX-XXXX</div>
+            <button class="copy-btn" onclick="copyKey()"><i class="fas fa-copy"></i> Copy Key</button>
+            <div style="margin-top: 10px; font-size: 12px; color: #ccc;">
+                <i class="fas fa-exclamation-triangle"></i> This key is unique to your token and cannot be reused
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let countdownInterval;
+    const token = "{{ token }}";
+
+    function updateStatus(message, type = 'info') {
+        const statusElement = document.getElementById('tokenStatus');
+        statusElement.textContent = message;
+        statusElement.className = 'status ' + type;
+    }
+
+    function startVerification() {
+        const generateBtn = document.getElementById('generateBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+
+        generateBtn.disabled = true;
+        updateStatus('⏳ Verifying token...', 'warning');
+
+        fetch('/verify_token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: token })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateStatus('✅ Token verified. Waiting 30 seconds...', 'success');
+                timerDisplay.style.display = 'block';
+                startCountdown();
+            } else {
+                updateStatus('❌ ' + data.message, 'error');
+                generateBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            updateStatus('❌ Network error. Please try again.', 'error');
+            generateBtn.disabled = false;
+        });
+    }
+
+    function startCountdown() {
+        let timeLeft = 30;
+        const countdownElement = document.getElementById('countdown');
+
+        countdownInterval = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                generateKey();
+            }
+        }, 1000);
+    }
+
+    function generateKey() {
+        updateStatus('⏳ Generating your MOO key...', 'warning');
+
+        fetch('/generate_key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayKey(data.key);
+            } else {
+                updateStatus('❌ ' + data.message, 'error');
+                document.getElementById('generateBtn').disabled = false;
+            }
+        })
+        .catch(error => {
+            updateStatus('❌ Network error. Please try again.', 'error');
+            document.getElementById('generateBtn').disabled = false;
+        });
+    }
+
+    function displayKey(key) {
+        const keyResult = document.getElementById('keyResult');
+        const generatedKeyElement = document.getElementById('generatedKey');
+        const timerDisplay = document.getElementById('timerDisplay');
+
+        generatedKeyElement.textContent = key;
+        keyResult.style.display = 'block';
+        timerDisplay.style.display = 'none';
+        
+        updateStatus('✅ Key generated successfully!', 'success');
+    }
+
+    function copyKey() {
+        const key = document.getElementById('generatedKey').textContent;
+        navigator.clipboard.writeText(key).then(() => {
+            alert('MOO Key copied to clipboard!');
+        });
+    }
+
+    function checkVerificationStatus() {
+        fetch('/check_verification')
+            .then(response => response.json())
+            .then(data => {
+                if (data.verified) {
+                    document.getElementById('generateBtn').disabled = true;
+                    document.getElementById('timerDisplay').style.display = 'block';
+                    
+                    if (data.can_generate) {
+                        generateKey();
+                    } else {
+                        startCountdownFrom(data.remaining_time);
+                    }
+                }
+            });
+    }
+
+    function startCountdownFrom(remaining) {
+        const countdownElement = document.getElementById('countdown');
+        let timeLeft = remaining;
+
+        countdownInterval = setInterval(() => {
+            timeLeft--;
+            countdownElement.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                generateKey();
+            }
+        }, 1000);
+
+        updateStatus('✅ Token verified. Waiting ' + remaining + ' seconds...', 'success');
+    }
+
+    window.addEventListener('load', checkVerificationStatus);
+</script>
+{% endblock %}
