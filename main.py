@@ -10,69 +10,41 @@ import hashlib
 
 app = Flask(__name__)
 
-def get_secret_key():
-    key_file = 'secret_key.txt'
-    if os.path.exists(key_file):
-        with open(key_file, 'r') as f:
-            return f.read().strip()
-    else:
-        new_key = 'mooflask-' + secrets.token_hex(32)
-        with open(key_file, 'w') as f:
-            f.write(new_key)
-        return new_key
-
-app.secret_key = get_secret_key()
+# Use environment variable for secret key, fallback to generated key
+app.secret_key = os.environ.get('SECRET_KEY', 'mooflask-' + secrets.token_hex(32))
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
-DATA_FILE = 'key_data.json'
-ADMIN_CREDENTIALS_FILE = 'admin_credentials.json'
-USER_ACCOUNTS_FILE = 'user_accounts.json'
+# In-memory data storage (will reset on cold starts)
+_data_store = {
+    'users': {},
+    'admin_credentials': {
+        'username': 'admin',
+        'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
+    },
+    'user_accounts': {'users': {}}
+}
 
 def load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            data = json.load(f)
-            current_time = time.time()
-            expired_users = []
-            for username, user_data in data.get('users', {}).items():
-                if current_time - user_data.get('created_timestamp', 0) > 21600:
-                    expired_users.append(username)
-            for username in expired_users:
-                if username in data['users']:
-                    del data['users'][username]
-            return data
-    return {'users': {}}
+    return _data_store.get('users', {})
 
 def save_data(data):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    _data_store['users'] = data
 
 def load_admin_credentials():
-    if os.path.exists(ADMIN_CREDENTIALS_FILE):
-        with open(ADMIN_CREDENTIALS_FILE, 'r') as f:
-            return json.load(f)
-    else:
-        default_credentials = {
-            'username': 'admin',
-            'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
-        }
-        save_admin_credentials(default_credentials)
-        return default_credentials
+    return _data_store.get('admin_credentials', {
+        'username': 'admin',
+        'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
+    })
 
 def save_admin_credentials(credentials):
-    with open(ADMIN_CREDENTIALS_FILE, 'w') as f:
-        json.dump(credentials, f, indent=2)
+    _data_store['admin_credentials'] = credentials
 
 def load_user_accounts():
-    if os.path.exists(USER_ACCOUNTS_FILE):
-        with open(USER_ACCOUNTS_FILE, 'r') as f:
-            return json.load(f)
-    return {'users': {}}
+    return _data_store.get('user_accounts', {'users': {}})
 
 def save_user_accounts(accounts):
-    with open(USER_ACCOUNTS_FILE, 'w') as f:
-        json.dump(accounts, f, indent=2)
+    _data_store['user_accounts'] = accounts
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -128,7 +100,7 @@ def generate_unique_moo_key():
         ]
         key = f"MOO-{key_parts[0]}-{key_parts[1]}-{key_parts[2]}-{key_parts[3]}"
         key_exists = False
-        for user_data in data['users'].values():
+        for user_data in data.values():
             if user_data.get('key') == key:
                 key_exists = True
                 break
@@ -148,14 +120,14 @@ def index():
         return render_template('error.html', message="No token provided"), 400
     data_store = load_data()
     current_time = time.time()
-    if token not in data_store['users']:
-        data_store['users'][token] = {
+    if token not in data_store:
+        data_store[token] = {
             'created_timestamp': current_time,
             'ip_address': request.remote_addr,
             'key': None
         }
         save_data(data_store)
-    user_data = data_store['users'][token]
+    user_data = data_store[token]
     if current_time - user_data['created_timestamp'] > 21600:
         user_data['created_timestamp'] = current_time
         user_data['key'] = None
@@ -177,14 +149,14 @@ def verify_token():
             return jsonify({'success': False, 'message': 'No token provided'})
         data_store = load_data()
         current_time = time.time()
-        if token not in data_store['users']:
-            data_store['users'][token] = {
+        if token not in data_store:
+            data_store[token] = {
                 'created_timestamp': current_time,
                 'ip_address': request.remote_addr,
                 'key': None
             }
             save_data(data_store)
-        user_data = data_store['users'][token]
+        user_data = data_store[token]
         if current_time - user_data['created_timestamp'] > 21600:
             user_data['created_timestamp'] = current_time
             user_data['key'] = None
@@ -210,9 +182,9 @@ def generate_key():
             remaining = 30 - int(elapsed)
             return jsonify({'success': False, 'message': f'Please wait {remaining} more seconds before generating your key.'})
         data_store = load_data()
-        if token not in data_store['users']:
+        if token not in data_store:
             return jsonify({'success': False, 'message': 'User not found'})
-        user_data = data_store['users'][token]
+        user_data = data_store[token]
         if user_data.get('key'):
             return jsonify({'success': False, 'message': 'Key already generated for this user'})
         try:
@@ -226,7 +198,6 @@ def generate_key():
         save_data(data_store)
         session.pop('verification_token', None)
         session.pop('verification_start', None)
-        print(f"Key generated: {key} for user: {token} from IP: {request.remote_addr}")
         return jsonify({
             'success': True, 
             'key': key,
@@ -255,7 +226,7 @@ def validate_key():
         key_user = None
         key_data = None
         
-        for user, user_data in data_store['users'].items():
+        for user, user_data in data_store.items():
             if user_data.get('key') == key:
                 key_found = True
                 key_user = user
@@ -422,13 +393,13 @@ def admin_dashboard():
     accounts = load_user_accounts()
     
     total_keys = 0
-    total_tokens = len(data['users'])
+    total_tokens = len(data)
     used_tokens = 0
     active_keys = 0
     current_time = time.time()
     total_users = len(accounts['users'])
     
-    for user_data in data['users'].values():
+    for user_data in data.values():
         if user_data.get('key'):
             total_keys += 1
             used_tokens += 1
@@ -443,7 +414,7 @@ def admin_dashboard():
         'total_users': total_users
     }
     
-    return render_template('admin_dashboard.html', stats=stats, keys=data['users'], users=accounts['users'])
+    return render_template('admin_dashboard.html', stats=stats, keys=data, users=accounts['users'])
 
 @app.route('/admin/delete_key', methods=['POST'])
 @admin_required
@@ -452,8 +423,8 @@ def admin_delete_key():
         data = request.get_json()
         token = data.get('token')
         data_store = load_data()
-        if token in data_store['users']:
-            data_store['users'][token]['key'] = None
+        if token in data_store:
+            data_store[token]['key'] = None
             save_data(data_store)
             return jsonify({'success': True, 'message': 'Key deleted successfully'})
         else:
@@ -469,12 +440,12 @@ def admin_clear_expired():
         current_time = time.time()
         expired_count = 0
         expired_users = []
-        for username, user_data in data_store['users'].items():
+        for username, user_data in data_store.items():
             if current_time - user_data.get('created_timestamp', 0) > 21600:
                 expired_users.append(username)
         for username in expired_users:
-            if username in data_store['users']:
-                del data_store['users'][username]
+            if username in data_store:
+                del data_store[username]
                 expired_count += 1
         save_data(data_store)
         return jsonify({'success': True, 'message': f'Cleared {expired_count} expired tokens'})
@@ -505,11 +476,6 @@ def after_request(response):
     return response
 
 if __name__ == '__main__':
-    if not os.path.exists(DATA_FILE):
-        save_data({'users': {}})
-    load_admin_credentials()
-    if not os.path.exists(USER_ACCOUNTS_FILE):
-        save_user_accounts({'users': {}})
     print("MooVerify Key System Starting...")
     print("Server running on http://0.0.0.0:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)
