@@ -31,19 +31,19 @@
         }
 
         body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
             min-height: 100vh;
-            line-height: 1.6;
+            line-height: 1.5;
             display: flex;
             flex-direction: column;
         }
 
         .navbar {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(10px);
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(100, 116, 139, 0.3);
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -56,15 +56,13 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.75rem;
         }
 
         .logo {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: bold;
-            background: linear-gradient(45deg, #00ff88, #00ccff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #38bdf8;
             white-space: nowrap;
             display: flex;
             align-items: center;
@@ -72,47 +70,50 @@
         }
 
         .logo-img {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
             object-fit: cover;
         }
 
         .nav-links {
             display: flex;
-            gap: 1rem;
+            gap: 0.75rem;
             align-items: center;
             flex-wrap: wrap;
         }
 
         .nav-links a {
-            color: #fff;
+            color: #cbd5e1;
             text-decoration: none;
-            transition: color 0.3s ease;
+            transition: all 0.2s ease;
             font-weight: 500;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             white-space: nowrap;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
         }
 
         .nav-links a:hover {
-            color: #00ff88;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
         }
 
         .admin-badge {
-            background: linear-gradient(45deg, #ff6b6b, #ffa726);
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
             white-space: nowrap;
         }
 
         .user-badge {
-            background: linear-gradient(45deg, #00ccff, #0099ff);
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
+            background: linear-gradient(45deg, #38bdf8, #0ea5e9);
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
             white-space: nowrap;
         }
 
@@ -125,10 +126,12 @@
         }
 
         .footer {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 1rem;
             text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(100, 116, 139, 0.3);
+            font-size: 0.85rem;
+            color: #94a3b8;
         }
 
         .footer-content {
@@ -138,89 +141,94 @@
 
         .btn {
             display: inline-block;
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(45deg, #00ff88, #00ccff);
-            color: #1a1a2e;
+            padding: 0.6rem 1.25rem;
+            background: linear-gradient(45deg, #38bdf8, #0ea5e9);
+            color: white;
             text-decoration: none;
             border-radius: 8px;
-            font-weight: bold;
-            transition: all 0.3s ease;
+            font-weight: 600;
+            transition: all 0.2s ease;
             border: none;
             cursor: pointer;
             text-align: center;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 4px rgba(56, 189, 248, 0.3);
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(56, 189, 248, 0.4);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(51, 65, 85, 0.6);
+            color: #e2e8f0;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            box-shadow: none;
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+            background: rgba(71, 85, 105, 0.8);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(100, 116, 139, 0.2);
+            margin-bottom: 1rem;
             width: 100%;
         }
 
         .alert {
-            padding: 1rem;
+            padding: 0.75rem;
             border-radius: 8px;
-            margin: 1rem 0;
+            margin: 0.75rem 0;
+            font-size: 0.85rem;
         }
 
         .alert-error {
-            background: rgba(255, 100, 100, 0.2);
-            border: 1px solid rgba(255, 100, 100, 0.3);
-            color: #ff6b6b;
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            color: #fca5a5;
         }
 
         .alert-success {
-            background: rgba(0, 255, 136, 0.2);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            color: #00ff88;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86efac;
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
             font-weight: 500;
+            font-size: 0.9rem;
+            color: #e2e8f0;
         }
 
         .form-control {
             width: 100%;
-            padding: 0.75rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+            padding: 0.6rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(100, 116, 139, 0.4);
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
         }
 
         .form-control:focus {
             outline: none;
-            border-color: #00ff88;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
         }
 
         @media (max-width: 768px) {
@@ -231,7 +239,37 @@
             
             .nav-links {
                 justify-content: center;
-                gap: 0.5rem;
+                gap: 0.4rem;
+            }
+            
+            .container {
+                padding: 0.75rem;
+            }
+            
+            .card {
+                padding: 1rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+
+            .nav-links a {
+                padding: 0.3rem 0.6rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 1.1rem;
+            }
+            
+            .nav-links a {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
             }
             
             .container {
@@ -239,31 +277,12 @@
             }
             
             .card {
-                padding: 1rem;
-                margin-bottom: 1rem;
-            }
-            
-            .btn {
-                padding: 0.6rem 1.2rem;
-                font-size: 0.85rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .logo {
-                font-size: 1.2rem;
-            }
-            
-            .nav-links a {
-                font-size: 0.8rem;
-            }
-            
-            .container {
-                padding: 0.25rem;
-            }
-            
-            .card {
                 padding: 0.75rem;
+            }
+
+            .logo-img {
+                width: 24px;
+                height: 24px;
             }
         }
 
