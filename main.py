@@ -10,8 +10,8 @@ import hashlib
 
 app = Flask(__name__)
 
-# Use environment variable for secret key, fallback to generated key
-app.secret_key = os.environ.get('SECRET_KEY', 'mooflask-' + secrets.token_hex(32))
+# Generate a consistent secret key based on the app name
+app.secret_key = hashlib.sha256('mooverify-key-system'.encode()).hexdigest()
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
@@ -474,6 +474,9 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-API-Key')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
+
+def create_app():
+    return app
 
 if __name__ == '__main__':
     print("MooVerify Key System Starting...")
