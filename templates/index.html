@@ -95,6 +95,21 @@
         color: #ffcc00;
     }
 
+    .header-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .header-logo img {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        object-fit: cover;
+    }
+
     @media (max-width: 480px) {
         .token {
             font-size: 16px;
@@ -107,6 +122,11 @@
         .timer {
             font-size: 20px;
         }
+        
+        .header-logo {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
     }
 </style>
 {% endblock %}
@@ -115,9 +135,12 @@
 <div class="container">
     <div class="card">
         <div class="header" style="text-align: center; margin-bottom: 30px;">
-            <h1 style="font-size: 28px; margin-bottom: 10px; background: linear-gradient(45deg, #00ff88, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                <i class="fas fa-shield-alt"></i> MooVerify Key System
-            </h1>
+            <div class="header-logo">
+                <img src="https://i.ibb.co/wFWBM0TQ/A919744-D-F648-4-E6-E-B8-D1-FDF70-F0508-C6.png" alt="MooVerify Logo">
+                <h1 style="font-size: 28px; margin-bottom: 10px; background: linear-gradient(45deg, #00ff88, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    MooVerify Key System
+                </h1>
+            </div>
             <p>Secure Verification & Key Generation</p>
         </div>
 
