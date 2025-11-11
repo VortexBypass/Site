@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to MooVerify - Secure Key System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card" style="text-align: center; padding: 4rem 2rem;">
+        <h1 style="font-size: 3rem; margin-bottom: 1rem; background: linear-gradient(45deg, #00ff88, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            <i class="fas fa-shield-alt"></i> MooVerify
+        </h1>
+        <p style="font-size: 1.2rem; margin-bottom: 2rem; color: #ccc;">
+            Professional Key Generation and Validation System
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="/generate" class="btn">
+                <i class="fas fa-rocket"></i> Generate Key
+            </a>
+            <a href="{{ url_for('user_signup') }}" class="btn btn-secondary">
+                <i class="fas fa-user-plus"></i> Sign Up
+            </a>
+            <a href="{{ url_for('user_login') }}" class="btn btn-secondary">
+                <i class="fas fa-sign-in-alt"></i> User Login
+            </a>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 4rem 0;">
+        <div class="card" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; color: #00ff88;">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3 style="margin-bottom: 1rem;">Secure Verification</h3>
+            <p style="color: #ccc;">Advanced security measures to ensure only authorized users can generate and validate keys.</p>
+        </div>
+
+        <div class="card" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; color: #00ccff;">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <h3 style="margin-bottom: 1rem;">Fast Generation</h3>
+            <p style="color: #ccc;">Quick and efficient key generation with automatic expiration and validation.</p>
+        </div>
+
+        <div class="card" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; color: #ff6b6b;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3 style="margin-bottom: 1rem;">API Access</h3>
+            <p style="color: #ccc;">Comprehensive API for integrating our key system into your own scripts and applications.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="text-align: center; margin-bottom: 2rem;">How It Works</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+            <div style="text-align: center;">
+                <div style="background: rgba(0, 255, 136, 0.2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem;">
+                    1
+                </div>
+                <h4>Get Token</h4>
+                <p style="color: #ccc; margin-top: 0.5rem;">Receive your unique verification token</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="background: rgba(0, 204, 255, 0.2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem;">
+                    2
+                </div>
+                <h4>Verify</h4>
+                <p style="color: #ccc; margin-top: 0.5rem;">Complete the verification process</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="background: rgba(255, 107, 107, 0.2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem;">
+                    3
+                </div>
+                <h4>Generate Key</h4>
+                <p style="color: #ccc; margin-top: 0.5rem;">Get your unique MOO activation key</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="background: rgba(255, 167, 38, 0.2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem;">
+                    4
+                </div>
+                <h4>Activate</h4>
+                <p style="color: #ccc; margin-top: 0.5rem;">Use your key in the application</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="text-align: center; margin-bottom: 2rem;">System Overview</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: center;">
+            <div>
+                <div style="font-size: 2rem; font-weight: bold; color: #00ff88;">24/7</div>
+                <div style="color: #ccc;">Uptime</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: bold; color: #00ccff;">Secure</div>
+                <div style="color: #ccc;">Encryption</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: bold; color: #ff6b6b;">Fast</div>
+                <div style="color: #ccc;">Processing</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: bold; color: #ffa726;">Reliable</div>
+                <div style="color: #ccc;">Service</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
