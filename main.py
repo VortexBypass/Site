@@ -11,7 +11,7 @@ import hashlib
 app = Flask(__name__)
 
 # Generate a consistent secret key
-app.secret_key = hashlib.sha256('mooverify-key-system-v2'.encode()).hexdigest()
+app.secret_key = hashlib.sha256('mooverify-key-system-v3'.encode()).hexdigest()
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
@@ -124,6 +124,21 @@ def index():
         return render_template('error.html', message="No token provided"), 400
     data_store = load_data()
     current_time = time.time()
+    
+    # Check if token exists and has a key
+    if token in data_store and data_store[token].get('key'):
+        key_data = data_store[token]
+        # Check if key is still valid (less than 6 hours old)
+        if current_time - key_data.get('key_generated_timestamp', 0) < 21600:
+            return render_template('key_already_generated.html', 
+                                 token=token, 
+                                 key=key_data['key'])
+        else:
+            # Key expired, allow regeneration
+            key_data['key'] = None
+            save_data(data_store)
+    
+    # Create new token entry if needed
     if token not in data_store:
         data_store[token] = {
             'created_timestamp': current_time,
@@ -131,15 +146,9 @@ def index():
             'key': None
         }
         save_data(data_store)
+    
     user_data = data_store[token]
-    if current_time - user_data['created_timestamp'] > 21600:
-        user_data['created_timestamp'] = current_time
-        user_data['key'] = None
-        save_data(data_store)
-    if user_data.get('key'):
-        return render_template('key_already_generated.html', 
-                             token=token, 
-                             key=user_data['key'])
+    
     session['verification_token'] = token
     session['verification_start'] = time.time()
     session.permanent = True
@@ -153,6 +162,14 @@ def verify_token():
             return jsonify({'success': False, 'message': 'No token provided'})
         data_store = load_data()
         current_time = time.time()
+        
+        # Check if token exists and has a valid key
+        if token in data_store and data_store[token].get('key'):
+            key_data = data_store[token]
+            if current_time - key_data.get('key_generated_timestamp', 0) < 21600:
+                return jsonify({'success': False, 'message': 'Key already generated for this user'})
+        
+        # Create new token entry if needed
         if token not in data_store:
             data_store[token] = {
                 'created_timestamp': current_time,
@@ -160,13 +177,9 @@ def verify_token():
                 'key': None
             }
             save_data(data_store)
+        
         user_data = data_store[token]
-        if current_time - user_data['created_timestamp'] > 21600:
-            user_data['created_timestamp'] = current_time
-            user_data['key'] = None
-            save_data(data_store)
-        if user_data.get('key'):
-            return jsonify({'success': False, 'message': 'Key already generated for this user'})
+        
         session['verification_token'] = token
         session['verification_start'] = time.time()
         session.permanent = True
@@ -190,7 +203,9 @@ def generate_key():
             return jsonify({'success': False, 'message': 'User not found'})
         user_data = data_store[token]
         if user_data.get('key'):
-            return jsonify({'success': False, 'message': 'Key already generated for this user'})
+            # Check if existing key is still valid
+            if time.time() - user_data.get('key_generated_timestamp', 0) < 21600:
+                return jsonify({'success': False, 'message': 'Key already generated for this user'})
         try:
             key = generate_unique_moo_key()
         except Exception as e:
@@ -205,7 +220,7 @@ def generate_key():
         return jsonify({
             'success': True, 
             'key': key,
-            'message': 'MOO Key generated successfully!'
+            'message': 'MOO Key generated successfully! This key will expire in 6 hours.'
         })
     except Exception as e:
         return jsonify({'success': False, 'message': f'Server error: {str(e)}'})
@@ -240,16 +255,25 @@ def validate_key():
         if not key_found:
             return jsonify({'valid': False, 'message': 'Key not found in database'})
         
-        if current_time - key_data['key_generated_timestamp'] > 21600:
-            return jsonify({'valid': False, 'message': 'Key has expired (6 hours)'})
+        # Check if key is expired (6 hours)
+        key_age = current_time - key_data['key_generated_timestamp']
+        if key_age > 21600:
+            hours_old = round(key_age / 3600, 1)
+            return jsonify({'valid': False, 'message': f'Key has expired ({hours_old} hours old). Keys are only valid for 6 hours.'})
         
         if key_user != username:
             return jsonify({'valid': False, 'message': 'Key does not belong to this user'})
         
+        # Calculate remaining time
+        remaining_time = 21600 - key_age
+        remaining_hours = int(remaining_time / 3600)
+        remaining_minutes = int((remaining_time % 3600) / 60)
+        
         return jsonify({
             'valid': True, 
-            'message': 'Key validated successfully',
-            'generated_at': key_data['key_generated_at']
+            'message': f'Key validated successfully! Expires in {remaining_hours}h {remaining_minutes}m',
+            'generated_at': key_data['key_generated_at'],
+            'expires_in': remaining_time
         })
     
     except Exception as e:
@@ -400,6 +424,7 @@ def admin_dashboard():
     total_tokens = len(data)
     used_tokens = 0
     active_keys = 0
+    expired_keys = 0
     current_time = time.time()
     total_users = len(accounts['users'])
     
@@ -407,14 +432,18 @@ def admin_dashboard():
         if user_data.get('key'):
             total_keys += 1
             used_tokens += 1
-            if current_time - user_data.get('key_generated_timestamp', 0) < 21600:
+            key_age = current_time - user_data.get('key_generated_timestamp', 0)
+            if key_age < 21600:
                 active_keys += 1
+            else:
+                expired_keys += 1
     
     stats = {
         'total_keys': total_keys,
         'total_tokens': total_tokens,
         'used_tokens': used_tokens,
         'active_keys': active_keys,
+        'expired_keys': expired_keys,
         'total_users': total_users
     }
     
@@ -445,14 +474,14 @@ def admin_clear_expired():
         expired_count = 0
         expired_users = []
         for username, user_data in data_store.items():
-            if current_time - user_data.get('created_timestamp', 0) > 21600:
+            if user_data.get('key') and current_time - user_data.get('key_generated_timestamp', 0) > 21600:
                 expired_users.append(username)
         for username in expired_users:
             if username in data_store:
-                del data_store[username]
+                data_store[username]['key'] = None
                 expired_count += 1
         save_data(data_store)
-        return jsonify({'success': True, 'message': f'Cleared {expired_count} expired tokens'})
+        return jsonify({'success': True, 'message': f'Cleared {expired_count} expired keys'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
