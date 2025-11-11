@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Key Already Generated - MooVerify{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 600px; margin: 0 auto;">
+        <div class="card" style="text-align: center;">
+            <div class="header" style="text-align: center; margin-bottom: 30px;">
+                <h1 style="font-size: 28px; margin-bottom: 10px; background: linear-gradient(45deg, #00ff88, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    <i class="fas fa-shield-alt"></i> MooVerify Key System
+                </h1>
+                <p>Key Already Generated</p>
+            </div>
+
+            <div style="margin-bottom: 20px; color: #ffcc00;">
+                <i class="fas fa-exclamation-triangle"></i> A key has already been generated for this token.
+            </div>
+
+            <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 10px; margin: 20px 0; text-align: center; border: 1px solid rgba(0, 255, 136, 0.3);">
+                <div>YOUR GENERATED KEY:</div>
+                <div style="font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; color: #00ff88; letter-spacing: 2px; margin: 10px 0; word-break: break-all;">{{ key }}</div>
+                <button style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 10px 20px; border-radius: 5px; cursor: pointer; transition: all 0.3s ease; margin: 10px 0;" onclick="copyKey()">
+                    <i class="fas fa-copy"></i> Copy Key
+                </button>
+            </div>
+
+            <div style="font-size: 14px; color: #ccc; margin-top: 20px; line-height: 1.5;">
+                <p><strong>Token:</strong> {{ token }}</p>
+                <p>This key was already generated and cannot be regenerated.</p>
+                <p>Keys expire after 6 hours from generation.</p>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Return to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyKey() {
+        const key = "{{ key }}";
+        navigator.clipboard.writeText(key).then(() => {
+            alert('Key copied to clipboard!');
+        });
+    }
+</script>
+{% endblock %}
