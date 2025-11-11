@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MooVerify - Secure Key System{% endblock %}</title>
+    <meta name="description" content="Professional Key Generation and Validation System">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MooVerify - Secure Key System">
+    <meta name="twitter:description" content="Professional Key Generation and Validation System">
+    <meta name="twitter:image" content="https://i.ibb.co/wFWBM0TQ/A919744-D-F648-4-E6-E-B8-D1-FDF70-F0508-C6.png">
+    <meta name="twitter:site" content="@MooVerify">
+    <meta name="twitter:creator" content="@MooVerify">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MooVerify - Secure Key System">
+    <meta property="og:description" content="Professional Key Generation and Validation System">
+    <meta property="og:image" content="https://i.ibb.co/wFWBM0TQ/A919744-D-F648-4-E6-E-B8-D1-FDF70-F0508-C6.png">
+    <meta property="og:url" content="https://mooverify.vercel.app">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -49,6 +66,16 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
         }
 
         .nav-links {
@@ -247,7 +274,8 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo">
-                <i class="fas fa-shield-alt"></i> MooVerify
+                <img src="https://i.ibb.co/wFWBM0TQ/A919744-D-F648-4-E6-E-B8-D1-FDF70-F0508-C6.png" alt="MooVerify Logo" class="logo-img">
+                MooVerify
             </div>
             <div class="nav-links">
                 <a href="{{ url_for('home') }}"><i class="fas fa-home"></i> Home</a>
