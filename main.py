@@ -7,59 +7,103 @@ import os
 import secrets
 from datetime import datetime, timedelta
 import hashlib
-import base64
+import threading
 
 app = Flask(__name__)
 
-# Generate a consistent secret key based on the app name
+# Generate a consistent secret key
 app.secret_key = hashlib.sha256('mooverify-key-system'.encode()).hexdigest()
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
-# Use environment variables for data persistence in Vercel
-def get_env_data(key, default):
-    """Get data from environment variable or return default"""
-    encoded_data = os.environ.get(key)
-    if encoded_data:
+# Thread-safe persistent storage
+class PersistentStorage:
+    def __init__(self):
+        self.data = {
+            'users': {},
+            'admin_credentials': {
+                'username': 'admin',
+                'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
+            },
+            'user_accounts': {'users': {}}
+        }
+        self.lock = threading.Lock()
+        self._load_from_file()
+    
+    def _load_from_file(self):
+        """Try to load data from file for persistence"""
         try:
-            return json.loads(base64.b64decode(encoded_data).decode('utf-8'))
+            # This won't work on Vercel, but provides local persistence
+            if os.path.exists('data_backup.json'):
+                with open('data_backup.json', 'r') as f:
+                    loaded_data = json.load(f)
+                    self.data.update(loaded_data)
         except:
-            return default
-    return default
+            pass
+    
+    def _save_to_file(self):
+        """Try to save data to file for persistence"""
+        try:
+            # This won't work on Vercel, but provides local persistence
+            with open('data_backup.json', 'w') as f:
+                json.dump(self.data, f)
+        except:
+            pass
+    
+    def load_data(self):
+        with self.lock:
+            return self.data.get('users', {})
+    
+    def save_data(self, data):
+        with self.lock:
+            self.data['users'] = data
+            self._save_to_file()
+            return True
+    
+    def load_user_accounts(self):
+        with self.lock:
+            return self.data.get('user_accounts', {'users': {}})
+    
+    def save_user_accounts(self, accounts):
+        with self.lock:
+            self.data['user_accounts'] = accounts
+            self._save_to_file()
+            return True
+    
+    def load_admin_credentials(self):
+        with self.lock:
+            return self.data.get('admin_credentials', {
+                'username': 'admin',
+                'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
+            })
+    
+    def save_admin_credentials(self, credentials):
+        with self.lock:
+            self.data['admin_credentials'] = credentials
+            self._save_to_file()
+            return True
 
-def set_env_data(key, data):
-    """Set data in environment variable (simulated for Vercel)"""
-    # In a real implementation, you'd use Vercel's KV store or a database
-    # For now, we'll use in-memory with file backup for local development
-    try:
-        encoded_data = base64.b64encode(json.dumps(data).encode('utf-8')).decode('utf-8')
-        # Note: In production, use a proper database
-        # This is a workaround for demo purposes
-        return True
-    except:
-        return False
+# Global storage instance
+storage = PersistentStorage()
 
-# Initialize data storage
+# Storage functions
 def load_data():
-    return get_env_data('MOOVERIFY_DATA', {'users': {}})
+    return storage.load_data()
 
 def save_data(data):
-    return set_env_data('MOOVERIFY_DATA', data)
-
-def load_admin_credentials():
-    return get_env_data('MOOVERIFY_ADMIN', {
-        'username': 'admin',
-        'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
-    })
-
-def save_admin_credentials(credentials):
-    return set_env_data('MOOVERIFY_ADMIN', credentials)
+    return storage.save_data(data)
 
 def load_user_accounts():
-    return get_env_data('MOOVERIFY_USERS', {'users': {}})
+    return storage.load_user_accounts()
 
 def save_user_accounts(accounts):
-    return set_env_data('MOOVERIFY_USERS', accounts)
+    return storage.save_user_accounts(accounts)
+
+def load_admin_credentials():
+    return storage.load_admin_credentials()
+
+def save_admin_credentials(credentials):
+    return storage.save_admin_credentials(credentials)
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -72,7 +116,8 @@ def verify_admin(username, password):
 def verify_user(username, password):
     accounts = load_user_accounts()
     if username in accounts['users']:
-        return hash_password(password) == accounts['users'][username]['password_hash']
+        stored_hash = accounts['users'][username]['password_hash']
+        return hash_password(password) == stored_hash
     return False
 
 def verify_api_key(api_key):
@@ -115,7 +160,7 @@ def generate_unique_moo_key():
         ]
         key = f"MOO-{key_parts[0]}-{key_parts[1]}-{key_parts[2]}-{key_parts[3]}"
         key_exists = False
-        for user_data in data['users'].values():
+        for user_data in data.values():
             if user_data.get('key') == key:
                 key_exists = True
                 break
@@ -135,14 +180,14 @@ def index():
         return render_template('error.html', message="No token provided"), 400
     data_store = load_data()
     current_time = time.time()
-    if token not in data_store['users']:
-        data_store['users'][token] = {
+    if token not in data_store:
+        data_store[token] = {
             'created_timestamp': current_time,
             'ip_address': request.remote_addr,
             'key': None
         }
         save_data(data_store)
-    user_data = data_store['users'][token]
+    user_data = data_store[token]
     if current_time - user_data['created_timestamp'] > 21600:
         user_data['created_timestamp'] = current_time
         user_data['key'] = None
@@ -164,14 +209,14 @@ def verify_token():
             return jsonify({'success': False, 'message': 'No token provided'})
         data_store = load_data()
         current_time = time.time()
-        if token not in data_store['users']:
-            data_store['users'][token] = {
+        if token not in data_store:
+            data_store[token] = {
                 'created_timestamp': current_time,
                 'ip_address': request.remote_addr,
                 'key': None
             }
             save_data(data_store)
-        user_data = data_store['users'][token]
+        user_data = data_store[token]
         if current_time - user_data['created_timestamp'] > 21600:
             user_data['created_timestamp'] = current_time
             user_data['key'] = None
@@ -197,9 +242,9 @@ def generate_key():
             remaining = 30 - int(elapsed)
             return jsonify({'success': False, 'message': f'Please wait {remaining} more seconds before generating your key.'})
         data_store = load_data()
-        if token not in data_store['users']:
+        if token not in data_store:
             return jsonify({'success': False, 'message': 'User not found'})
-        user_data = data_store['users'][token]
+        user_data = data_store[token]
         if user_data.get('key'):
             return jsonify({'success': False, 'message': 'Key already generated for this user'})
         try:
@@ -241,7 +286,7 @@ def validate_key():
         key_user = None
         key_data = None
         
-        for user, user_data in data_store['users'].items():
+        for user, user_data in data_store.items():
             if user_data.get('key') == key:
                 key_found = True
                 key_user = user
@@ -408,13 +453,13 @@ def admin_dashboard():
     accounts = load_user_accounts()
     
     total_keys = 0
-    total_tokens = len(data['users'])
+    total_tokens = len(data)
     used_tokens = 0
     active_keys = 0
     current_time = time.time()
     total_users = len(accounts['users'])
     
-    for user_data in data['users'].values():
+    for user_data in data.values():
         if user_data.get('key'):
             total_keys += 1
             used_tokens += 1
@@ -429,7 +474,7 @@ def admin_dashboard():
         'total_users': total_users
     }
     
-    return render_template('admin_dashboard.html', stats=stats, keys=data['users'], users=accounts['users'])
+    return render_template('admin_dashboard.html', stats=stats, keys=data, users=accounts['users'])
 
 @app.route('/admin/delete_key', methods=['POST'])
 @admin_required
@@ -438,8 +483,8 @@ def admin_delete_key():
         data = request.get_json()
         token = data.get('token')
         data_store = load_data()
-        if token in data_store['users']:
-            data_store['users'][token]['key'] = None
+        if token in data_store:
+            data_store[token]['key'] = None
             save_data(data_store)
             return jsonify({'success': True, 'message': 'Key deleted successfully'})
         else:
@@ -455,12 +500,12 @@ def admin_clear_expired():
         current_time = time.time()
         expired_count = 0
         expired_users = []
-        for username, user_data in data_store['users'].items():
+        for username, user_data in data_store.items():
             if current_time - user_data.get('created_timestamp', 0) > 21600:
                 expired_users.append(username)
         for username in expired_users:
-            if username in data_store['users']:
-                del data_store['users'][username]
+            if username in data_store:
+                del data_store[username]
                 expired_count += 1
         save_data(data_store)
         return jsonify({'success': True, 'message': f'Cleared {expired_count} expired tokens'})
