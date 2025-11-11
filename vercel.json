@@ -19,8 +19,5 @@
       "src": "/(.*)",
       "dest": "main.py"
     }
-  ],
-  "env": {
-    "SECRET_KEY": "@mooverify-secret-key"
-  }
+  ]
 }
