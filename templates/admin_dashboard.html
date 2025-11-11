@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - MooVerify{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        border-left: 4px solid #00ff88;
+    }
+
+    .stat-card.warning {
+        border-left-color: #ffa726;
+    }
+
+    .stat-card.danger {
+        border-left-color: #ff6b6b;
+    }
+
+    .stat-card.info {
+        border-left-color: #00ccff;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #ccc;
+        font-size: 0.9rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .keys-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    .keys-table th,
+    .keys-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .keys-table th {
+        background: rgba(255, 255, 255, 0.1);
+        font-weight: 600;
+    }
+
+    .keys-table tr:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .key-code {
+        font-family: 'Courier New', monospace;
+        background: rgba(0, 255, 136, 0.1);
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        color: #00ff88;
+        word-break: break-all;
+    }
+
+    .btn-small {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    .btn-danger {
+        background: linear-gradient(45deg, #ff6b6b, #ffa726);
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1001;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+        background: #1a1a2e;
+        margin: 10% auto;
+        padding: 2rem;
+        border-radius: 15px;
+        max-width: 400px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tab-container {
+        margin: 2rem 0;
+    }
+
+    .tabs {
+        display: flex;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .tab {
+        padding: 1rem 2rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+    }
+
+    .tab.active {
+        border-bottom: 2px solid #00ff88;
+        color: #00ff88;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+        }
+        
+        .keys-table {
+            font-size: 0.8rem;
+        }
+        
+        .keys-table th,
+        .keys-table td {
+            padding: 0.5rem;
+        }
+        
+        .tab {
+            padding: 0.75rem 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+        }
+        
+        .tabs {
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <h1><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h1>
+            <div style="color: #ccc;">
+                Welcome, <strong>{{ session.get('admin_username') }}</strong>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" style="color: #00ff88;">{{ stats.total_keys }}</div>
+                <div class="stat-label">Total Keys Generated</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-number" style="color: #00ccff;">{{ stats.active_keys }}</div>
+                <div class="stat-label">Active Keys</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-number" style="color: #ffa726;">{{ stats.total_tokens }}</div>
+                <div class="stat-label">Total Tokens</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="stat-number" style="color: #ff6b6b;">{{ stats.used_tokens }}</div>
+                <div class="stat-label">Used Tokens</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-number" style="color: #00ccff;">{{ stats.total_users }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="showChangePasswordModal()">
+                <i class="fas fa-key"></i> Change Password
+            </button>
+            <button class="btn btn-danger" onclick="clearExpiredTokens()">
+                <i class="fas fa-trash"></i> Clear Expired Tokens
+            </button>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+
+        <div class="tab-container">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('keys-tab')">Keys Management</div>
+                <div class="tab" onclick="switchTab('users-tab')">User Accounts</div>
+                <div class="tab" onclick="switchTab('system-tab')">System Info</div>
+            </div>
+
+            <div id="keys-tab" class="tab-content active">
+                <h3>Generated Keys</h3>
+                {% if keys %}
+                <div style="overflow-x: auto;">
+                    <table class="keys-table">
+                        <thead>
+                            <tr>
+                                <th>Token</th>
+                                <th>Key</th>
+                                <th>Generated At</th>
+                                <th>IP Address</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for token, data in keys.items() %}
+                            {% if data.key %}
+                            <tr>
+                                <td style="word-break: break-all;">{{ token }}</td>
+                                <td><span class="key-code">{{ data.key }}</span></td>
+                                <td>{{ data.key_generated_at }}</td>
+                                <td>{{ data.ip_address }}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-small" onclick="deleteKey('{{ token }}')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 2rem; color: #ccc;">
+                    <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p>No keys generated yet</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div id="users-tab" class="tab-content">
+                <h3>User Accounts</h3>
+                {% if users %}
+                <div style="overflow-x: auto;">
+                    <table class="keys-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Created At</th>
+                                <th>API Keys</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for username, data in users.items() %}
+                            <tr>
+                                <td>{{ username }}</td>
+                                <td>{{ data.created_at }}</td>
+                                <td>{{ data.api_keys|length if data.api_keys else 0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 2rem; color: #ccc;">
+                    <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p>No user accounts yet</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div id="system-tab" class="tab-content">
+                <h3>System Information</h3>
+                <div class="card">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <div>
+                            <h4><i class="fas fa-server"></i> Server Status</h4>
+                            <p style="color: #00ff88;"><i class="fas fa-circle"></i> Online</p>
+                        </div>
+                        <div>
+                            <h4><i class="fas fa-database"></i> Database</h4>
+                            <p style="color: #ccc;">{{ stats.total_tokens }} records</p>
+                        </div>
+                        <div>
+                            <h4><i class="fas fa-clock"></i> Key Duration</h4>
+                            <p style="color: #ccc;">6 hours</p>
+                        </div>
+                        <div>
+                            <h4><i class="fas fa-shield-alt"></i> Security</h4>
+                            <p style="color: #00ff88;">Enabled</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="changePasswordModal" class="modal">
+    <div class="modal-content">
+        <h3><i class="fas fa-key"></i> Change Password</h3>
+        <form id="changePasswordForm">
+            <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" name="current_password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>New Password</label>
+                <input type="password" name="new_password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Confirm New Password</label>
+                <input type="password" name="confirm_password" class="form-control" required>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button type="submit" class="btn">Change Password</button>
+                <button type="button" class="btn btn-secondary" onclick="hideChangePasswordModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        document.getElementById(tabName).classList.add('active');
+        
+        event.target.classList.add('active');
+    }
+
+    function showChangePasswordModal() {
+        document.getElementById('changePasswordModal').style.display = 'block';
+    }
+
+    function hideChangePasswordModal() {
+        document.getElementById('changePasswordModal').style.display = 'none';
+        document.getElementById('changePasswordForm').reset();
+    }
+
+    function deleteKey(token) {
+        if (confirm('Are you sure you want to delete the key for token: ' + token + '?')) {
+            fetch('/admin/delete_key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Key deleted successfully');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+    }
+
+    function clearExpiredTokens() {
+        if (confirm('Are you sure you want to clear all expired tokens?')) {
+            fetch('/admin/clear_expired', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+    }
+
+    document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const currentPassword = formData.get('current_password');
+        const newPassword = formData.get('new_password');
+        const confirmPassword = formData.get('confirm_password');
+        
+        if (newPassword !== confirmPassword) {
+            alert('New passwords do not match!');
+            return;
+        }
+        
+        if (newPassword.length < 6) {
+            alert('New password must be at least 6 characters long!');
+            return;
+        }
+        
+        fetch('/admin/change_password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                current_password: currentPassword,
+                new_password: newPassword
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Password changed successfully!');
+                hideChangePasswordModal();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    });
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('changePasswordModal');
+        if (event.target === modal) {
+            hideChangePasswordModal();
+        }
+    }
+</script>
+{% endblock %}
