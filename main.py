@@ -7,103 +7,47 @@ import os
 import secrets
 from datetime import datetime, timedelta
 import hashlib
-import threading
 
 app = Flask(__name__)
 
 # Generate a consistent secret key
-app.secret_key = hashlib.sha256('mooverify-key-system'.encode()).hexdigest()
+app.secret_key = hashlib.sha256('mooverify-key-system-v2'.encode()).hexdigest()
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
-# Thread-safe persistent storage
-class PersistentStorage:
-    def __init__(self):
-        self.data = {
-            'users': {},
-            'admin_credentials': {
-                'username': 'admin',
-                'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
-            },
-            'user_accounts': {'users': {}}
-        }
-        self.lock = threading.Lock()
-        self._load_from_file()
-    
-    def _load_from_file(self):
-        """Try to load data from file for persistence"""
-        try:
-            # This won't work on Vercel, but provides local persistence
-            if os.path.exists('data_backup.json'):
-                with open('data_backup.json', 'r') as f:
-                    loaded_data = json.load(f)
-                    self.data.update(loaded_data)
-        except:
-            pass
-    
-    def _save_to_file(self):
-        """Try to save data to file for persistence"""
-        try:
-            # This won't work on Vercel, but provides local persistence
-            with open('data_backup.json', 'w') as f:
-                json.dump(self.data, f)
-        except:
-            pass
-    
-    def load_data(self):
-        with self.lock:
-            return self.data.get('users', {})
-    
-    def save_data(self, data):
-        with self.lock:
-            self.data['users'] = data
-            self._save_to_file()
-            return True
-    
-    def load_user_accounts(self):
-        with self.lock:
-            return self.data.get('user_accounts', {'users': {}})
-    
-    def save_user_accounts(self, accounts):
-        with self.lock:
-            self.data['user_accounts'] = accounts
-            self._save_to_file()
-            return True
-    
-    def load_admin_credentials(self):
-        with self.lock:
-            return self.data.get('admin_credentials', {
-                'username': 'admin',
-                'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
-            })
-    
-    def save_admin_credentials(self, credentials):
-        with self.lock:
-            self.data['admin_credentials'] = credentials
-            self._save_to_file()
-            return True
+# Global in-memory storage (persists for the duration of the server instance)
+_storage = {
+    'users': {},
+    'admin_credentials': {
+        'username': 'admin',
+        'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
+    },
+    'user_accounts': {'users': {}}
+}
 
-# Global storage instance
-storage = PersistentStorage()
-
-# Storage functions
 def load_data():
-    return storage.load_data()
+    return _storage.get('users', {})
 
 def save_data(data):
-    return storage.save_data(data)
+    _storage['users'] = data
+    return True
 
 def load_user_accounts():
-    return storage.load_user_accounts()
+    return _storage.get('user_accounts', {'users': {}})
 
 def save_user_accounts(accounts):
-    return storage.save_user_accounts(accounts)
+    _storage['user_accounts'] = accounts
+    return True
 
 def load_admin_credentials():
-    return storage.load_admin_credentials()
+    return _storage.get('admin_credentials', {
+        'username': 'admin',
+        'password_hash': hashlib.sha256('admin123'.encode()).hexdigest()
+    })
 
 def save_admin_credentials(credentials):
-    return storage.save_admin_credentials(credentials)
+    _storage['admin_credentials'] = credentials
+    return True
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -535,10 +479,18 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
 
-def create_app():
-    return app
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('error.html', message="Page not found"), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template('error.html', message="Internal server error"), 500
 
 if __name__ == '__main__':
     print("MooVerify Key System Starting...")
     print("Server running on http://0.0.0.0:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)
+else:
+    # For Vercel deployment
+    app = app
