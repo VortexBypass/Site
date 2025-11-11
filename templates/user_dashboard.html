@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard - MooVerify{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1rem;
+        border-radius: 10px;
+        text-align: center;
+        border-left: 4px solid #00ff88;
+    }
+
+    .stat-card.info {
+        border-left-color: #00ccff;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #ccc;
+        font-size: 0.8rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .api-key {
+        font-family: 'Courier New', monospace;
+        background: rgba(0, 255, 136, 0.1);
+        padding: 0.5rem;
+        border-radius: 4px;
+        color: #00ff88;
+        word-break: break-all;
+        margin: 0.5rem 0;
+        font-size: 0.8rem;
+    }
+
+    .btn-small {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+    }
+
+    .btn-danger {
+        background: linear-gradient(45deg, #ff6b6b, #ffa726);
+    }
+
+    .code-block {
+        background: #1a1a2e;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        line-height: 1.4;
+        overflow-x: auto;
+        white-space: pre-wrap;
+    }
+
+    .tab-container {
+        margin: 1.5rem 0;
+    }
+
+    .tabs {
+        display: flex;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .tab {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .tab.active {
+        border-bottom: 2px solid #00ff88;
+        color: #00ff88;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .key-item {
+        padding: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .key-item:last-child {
+        border-bottom: none;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .stat-number {
+            font-size: 1.5rem;
+        }
+        
+        .action-buttons {
+            gap: 0.5rem;
+        }
+        
+        .tabs {
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        .code-block {
+            font-size: 0.75rem;
+            padding: 0.75rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+        }
+        
+        .tab {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 style="font-size: 1.5rem;"><i class="fas fa-tachometer-alt"></i> User Dashboard</h1>
+            <div style="color: #ccc;">
+                Welcome, <strong>{{ session.get('user_username') }}</strong>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" style="color: #00ff88;">
+                    {{ user_data.api_keys|length if user_data.api_keys else 0 }}
+                </div>
+                <div class="stat-label">API Keys</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-number" style="color: #00ccff;">24/7</div>
+                <div class="stat-label">Uptime</div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn" onclick="generateApiKey()">
+                <i class="fas fa-key"></i> Generate API Key
+            </button>
+            <a href="{{ url_for('user_logout') }}" class="btn btn-secondary">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+
+        <div class="tab-container">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('api-keys-tab')">API Keys</div>
+                <div class="tab" onclick="switchTab('documentation-tab')">Documentation</div>
+            </div>
+
+            <div id="api-keys-tab" class="tab-content active">
+                <h3 style="margin-bottom: 1rem;">Your API Keys</h3>
+                {% if user_data.api_keys %}
+                    {% for api_key in user_data.api_keys %}
+                    <div class="card" style="margin-bottom: 1rem; padding: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <div class="api-key">{{ api_key.key }}</div>
+                                <div style="color: #ccc; font-size: 0.75rem; margin-top: 0.5rem;">
+                                    Created: {{ api_key.created_at }}
+                                    {% if api_key.last_used %}
+                                    <br>Last Used: {{ api_key.last_used }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <button class="btn btn-danger btn-small" onclick="revokeApiKey('{{ api_key.key }}')">
+                                <i class="fas fa-trash"></i> Revoke
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="text-align: center; padding: 2rem; color: #ccc;">
+                    <i class="fas fa-key" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>No API keys generated yet</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div id="documentation-tab" class="tab-content">
+                <h3 style="margin-bottom: 1rem;">Integration Documentation</h3>
+                
+                <div class="card">
+                    <h4 style="margin-bottom: 0.75rem;"><i class="fas fa-code"></i> Complete Lua Implementation</h4>
+                    <p style="margin-bottom: 1rem; color: #ccc;">Here's the full implementation for integrating MooVerify into your Lua scripts:</p>
+                    
+                    <div class="code-block">local MooVerify = {}
+MooVerify.APIBaseURL = "https://carminestoat.onpella.app"
+MooVerify.APIKey = "YOUR_API_KEY_HERE"  -- Replace with your actual API key
+
+function MooVerify:ValidateKey(key, username)
+    local success, result = pcall(function()
+        local payload = {
+            key = key,
+            username = username
+        }
+        
+        local response = game:GetService("HttpService"):RequestAsync({
+            Url = self.APIBaseURL .. "/validate_key",
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json",
+                ["X-API-Key"] = self.APIKey
+            },
+            Body = game:GetService("HttpService"):JSONEncode(payload)
+        })
+        
+        if response.Success then
+            return game:GetService("HttpService"):JSONDecode(response.Body)
+        else
+            error("HTTP " .. response.StatusCode .. ": " .. response.StatusMessage)
+        end
+    end)
+    
+    if success then
+        return result
+    else
+        return {valid = false, message = "Connection failed: " .. tostring(result)}
+    end
+end
+
+function MooVerify:CreateVerificationGUI()
+    -- Create your GUI here
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = game.Players.LocalPlayer.PlayerGui
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 200)
+    frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+    frame.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+    frame.Parent = screenGui
+    
+    -- Add your UI elements here
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(0, 250, 0, 30)
+    textBox.Position = UDim2.new(0, 25, 0, 50)
+    textBox.PlaceholderText = "Enter your MOO key..."
+    textBox.Parent = frame
+    
+    local verifyButton = Instance.new("TextButton")
+    verifyButton.Size = UDim2.new(0, 250, 0, 30)
+    verifyButton.Position = UDim2.new(0, 25, 0, 100)
+    verifyButton.Text = "Verify Key"
+    verifyButton.Parent = frame
+    
+    verifyButton.MouseButton1Click:Connect(function()
+        local key = textBox.Text:upper()
+        local username = game.Players.LocalPlayer.Name
+        
+        local result = self:ValidateKey(key, username)
+        
+        if result.valid then
+            -- Key is valid, load your script
+            print("Key validated successfully!")
+            -- loadstring(game:HttpGet("YOUR_MAIN_SCRIPT_URL"))()
+        else
+            -- Key is invalid
+            warn("Key validation failed: " .. result.message)
+        end
+    end)
+    
+    return screenGui
+end
+
+-- Initialize the system
+return MooVerify</div>
+
+                    <h4 style="margin: 1.5rem 0 0.75rem 0;"><i class="fas fa-cogs"></i> Basic Usage Example</h4>
+                    <div class="code-block">-- Simple implementation for your script
+local MooVerify = require(script.Parent.MooVerify)  -- Adjust path as needed
+
+-- Set your API key (get this from your MooVerify dashboard)
+MooVerify.APIKey = "your_actual_api_key_here"
+
+-- Validate a key
+local key = "MOO-XXX-XXX-XXX-XXX"  -- User's input
+local username = game.Players.LocalPlayer.Name
+
+local result = MooVerify:ValidateKey(key, username)
+
+if result.valid then
+    print("✅ Key validated! Loading script...")
+    -- Load your main script here
+    -- loadstring(game:HttpGet("YOUR_SCRIPT_URL"))()
+else
+    warn("❌ Key invalid: " .. result.message)
+    -- Show error to user
+end</div>
+
+                    <h4 style="margin: 1.5rem 0 0.75rem 0;"><i class="fas fa-shield-alt"></i> Key Validation Rules</h4>
+                    <ul style="color: #ccc; margin-left: 1.5rem; margin-bottom: 1rem;">
+                        <li>Keys must be in format: MOO-XXX-XXX-XXX-XXX</li>
+                        <li>Keys expire after 6 hours</li>
+                        <li>Each key can only be used by one username</li>
+                        <li>Keys are case-insensitive</li>
+                        <li>Rate limiting: 10 requests per minute per IP</li>
+                    </ul>
+
+                    <h4 style="margin: 1.5rem 0 0.75rem 0;"><i class="fas fa-wrench"></i> Error Handling</h4>
+                    <div class="code-block">-- Proper error handling example
+local function validateUserKey(key, username)
+    local result = MooVerify:ValidateKey(key, username)
+    
+    if result.valid then
+        return true, "Key validated successfully"
+    else
+        -- Handle specific error cases
+        if string.find(result.message, "expired", 1, true) then
+            return false, "Key has expired. Please generate a new one."
+        elseif string.find(result.message, "not found", 1, true) then
+            return false, "Invalid key. Please check and try again."
+        elseif string.find(result.message, "does not belong", 1, true) then
+            return false, "This key is assigned to a different user."
+        else
+            return false, "Validation failed: " .. result.message
+        end
+    end
+end</div>
+
+                    <h4 style="margin: 1.5rem 0 0.75rem 0;"><i class="fas fa-rocket"></i> Getting Started</h4>
+                    <ol style="color: #ccc; margin-left: 1.5rem;">
+                        <li>Sign up for a MooVerify account</li>
+                        <li>Generate an API key in your dashboard</li>
+                        <li>Implement the Lua code in your script</li>
+                        <li>Test the validation system</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        document.getElementById(tabName).classList.add('active');
+        
+        event.target.classList.add('active');
+    }
+
+    function generateApiKey() {
+        fetch('/user/generate_api_key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('New API Key: ' + data.api_key + '\n\nMake sure to copy it now! It will not be shown again.');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+
+    function revokeApiKey(apiKey) {
+        if (confirm('Are you sure you want to revoke this API key?')) {
+            fetch('/user/revoke_api_key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ api_key: apiKey })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+    }
+</script>
+{% endblock %}
